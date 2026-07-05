@@ -25,7 +25,9 @@ from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 
-load_dotenv()
+# Load .env from the same directory as this file (works regardless of CWD)
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path=_env_path, override=True)
 
 # --------------------------------------------------------------------------
 # API Key Setup
