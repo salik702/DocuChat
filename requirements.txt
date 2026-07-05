@@ -16,3 +16,6 @@ langchain_huggingface
 transformers
 torch
 sentence-transformers
+langchain-chroma
+streamlit
+pypdf
