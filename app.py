@@ -28,6 +28,13 @@ from langchain_core.prompts import ChatPromptTemplate
 load_dotenv()
 
 # --------------------------------------------------------------------------
+# API Key Setup
+# --------------------------------------------------------------------------
+mistral_api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
+if not mistral_api_key and "MISTRAL_API_KEY" in st.secrets:
+    mistral_api_key = st.secrets["MISTRAL_API_KEY"].strip()
+
+# --------------------------------------------------------------------------
 # Page config
 # --------------------------------------------------------------------------
 st.set_page_config(
@@ -172,26 +179,26 @@ for key, val in defaults.items():
 # Core RAG functions
 # --------------------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def get_embedding_model():
-    return MistralAIEmbeddings(model="mistral-embed")
+def get_embedding_model(api_key: str):
+    return MistralAIEmbeddings(model="mistral-embed", mistral_api_key=api_key)
 
 
 @st.cache_resource(show_spinner=False)
-def get_llm(model_name: str, temperature: float):
-    return ChatMistralAI(model=model_name, temperature=temperature)
+def get_llm(model_name: str, temperature: float, api_key: str):
+    return ChatMistralAI(model=model_name, temperature=temperature, mistral_api_key=api_key)
 
 
 def file_hash(file_bytes: bytes) -> str:
     return hashlib.md5(file_bytes).hexdigest()[:12]
 
 
-def build_vectorstore(uploaded_file, chunk_size: int, chunk_overlap: int):
+def build_vectorstore(uploaded_file, chunk_size: int, chunk_overlap: int, api_key: str):
     """Load PDF -> split -> embed -> store in Chroma. Returns (vectorstore, num_chunks)."""
     file_bytes = uploaded_file.getvalue()
     doc_id = file_hash(file_bytes)
     persist_dir = os.path.join(CHROMA_ROOT, doc_id)
 
-    embedding_model = get_embedding_model()
+    embedding_model = get_embedding_model(api_key)
 
     # Reuse existing store if this exact file was processed before
     if os.path.exists(persist_dir) and os.listdir(persist_dir):
@@ -257,6 +264,18 @@ def answer_question(retriever, llm, query: str):
 # Sidebar — settings only
 # --------------------------------------------------------------------------
 with st.sidebar:
+    st.markdown("### 🔑 Authentication")
+    if not mistral_api_key:
+        mistral_api_key = st.text_input(
+            "Mistral API Key",
+            type="password",
+            help="Enter your Mistral API key to use the app. It is not saved.",
+        ).strip()
+        if mistral_api_key:
+            st.success("API Key applied locally!")
+    else:
+        st.success("✓ API Key active")
+
     st.markdown("### ⚙️ Settings")
 
     with st.expander("Chunking", expanded=False):
@@ -331,6 +350,7 @@ if st.session_state.vectorstore is None:
         "Choose a PDF file",
         type=["pdf"],
         label_visibility="collapsed",
+        disabled=not mistral_api_key,
     )
 
     col_a, col_b = st.columns([1, 3])
@@ -338,13 +358,16 @@ if st.session_state.vectorstore is None:
         process_btn = st.button(
             "Process document",
             use_container_width=True,
-            disabled=uploaded_file is None,
+            disabled=uploaded_file is None or not mistral_api_key,
         )
+
+    if not mistral_api_key:
+        st.info("💡 Please enter your **Mistral API Key** in the sidebar authentication panel to unlock PDF uploading and processing.")
 
     if process_btn and uploaded_file is not None:
         with st.spinner("Reading PDF, chunking, and creating embeddings..."):
             try:
-                vectorstore, count = build_vectorstore(uploaded_file, chunk_size, chunk_overlap)
+                vectorstore, count = build_vectorstore(uploaded_file, chunk_size, chunk_overlap, mistral_api_key)
                 st.session_state.vectorstore = vectorstore
                 st.session_state.chunk_count = count
                 st.session_state.doc_name = uploaded_file.name
@@ -384,7 +407,7 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 try:
-                    llm = get_llm(model_name, temperature)
+                    llm = get_llm(model_name, temperature, mistral_api_key)
                     answer, sources = answer_question(st.session_state.retriever, llm, query)
                 except Exception as e:
                     st.error(f"Error: {e}")
