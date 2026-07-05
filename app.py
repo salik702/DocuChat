@@ -25,30 +25,63 @@ from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 
-# Load .env from the same directory as this file (works regardless of CWD)
-_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(dotenv_path=_env_path, override=True)
+
+def _find_and_load_dotenv() -> None:
+    """Try every plausible .env location so the key is always found."""
+    candidates = []
+    # 1. Same directory as this source file
+    try:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+    except Exception:
+        pass
+    # 2. Current working directory
+    candidates.append(os.path.join(os.getcwd(), ".env"))
+    # 3. Walk up from CWD up to 3 levels
+    parent = os.getcwd()
+    for _ in range(3):
+        parent = os.path.dirname(parent)
+        candidates.append(os.path.join(parent, ".env"))
+
+    for path in candidates:
+        if os.path.isfile(path):
+            load_dotenv(dotenv_path=path, override=True)
+            # Also parse manually in case dotenv silently fails
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        k, _, v = line.partition("=")
+                        k = k.strip()
+                        v = v.strip().strip('"\'')
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+                        elif k == "MISTRAL_API_KEY":  # always prefer .env value
+                            os.environ[k] = v
+            except Exception:
+                pass
+            break  # stop after first found .env
+
+
+_find_and_load_dotenv()
 
 # --------------------------------------------------------------------------
 # API Key Setup
 # --------------------------------------------------------------------------
-def _load_api_key() -> str:
-    """Load and sanitise the Mistral API key from .env or Streamlit secrets."""
-    key = os.environ.get("MISTRAL_API_KEY", "").strip().strip('"\'')
-    if not key:
-        try:
-            key = st.secrets.get("MISTRAL_API_KEY", "").strip().strip('"\'') 
-        except Exception:
-            pass
-    return key
-
-mistral_api_key = _load_api_key()
+mistral_api_key = os.environ.get("MISTRAL_API_KEY", "").strip().strip('"\'')
+if not mistral_api_key:
+    try:
+        mistral_api_key = st.secrets.get("MISTRAL_API_KEY", "").strip().strip('"\'')
+    except Exception:
+        pass
 
 if not mistral_api_key:
     st.set_page_config(page_title="DocuChat AI", page_icon="📚")
     st.error(
         "🔑 **MISTRAL_API_KEY not found.** "
-        "Add it to your `.env` file as `MISTRAL_API_KEY=your_key_here` and restart the app."
+        "Ensure your `.env` file contains `MISTRAL_API_KEY=your_key_here` "
+        "and restart the app."
     )
     st.stop()
 
