@@ -17,6 +17,12 @@
   <img src="https://img.shields.io/badge/Status-Production%20Ready-22c55e?style=for-the-badge" />
 </p>
 
+<p>
+  <a href="https://docuchat-salik.streamlit.app/">
+    <img src="https://img.shields.io/badge/🚀%20LIVE%20DEMO-Click%20to%20Launch-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" />
+  </a>
+</p>
+
 </div>
 
 <br/>
@@ -117,6 +123,12 @@ DocuChat-AI/
 ├── requirements.txt
 └── README.md
 ```
+
+<br/>
+
+## 🚀 Live Demo
+
+Try it instantly, no setup required: **[docuchat-salik.streamlit.app](https://docuchat-salik.streamlit.app/)**
 
 <br/>
 
