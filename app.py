@@ -264,18 +264,6 @@ def answer_question(retriever, llm, query: str):
 # Sidebar — settings only
 # --------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🔑 Authentication")
-    if not mistral_api_key:
-        mistral_api_key = st.text_input(
-            "Mistral API Key",
-            type="password",
-            help="Enter your Mistral API key to use the app. It is not saved.",
-        ).strip()
-        if mistral_api_key:
-            st.success("API Key applied locally!")
-    else:
-        st.success("✓ API Key active")
-
     st.markdown("### ⚙️ Settings")
 
     with st.expander("Chunking", expanded=False):
@@ -350,7 +338,6 @@ if st.session_state.vectorstore is None:
         "Choose a PDF file",
         type=["pdf"],
         label_visibility="collapsed",
-        disabled=not mistral_api_key,
     )
 
     col_a, col_b = st.columns([1, 3])
@@ -358,11 +345,8 @@ if st.session_state.vectorstore is None:
         process_btn = st.button(
             "Process document",
             use_container_width=True,
-            disabled=uploaded_file is None or not mistral_api_key,
+            disabled=uploaded_file is None,
         )
-
-    if not mistral_api_key:
-        st.info("💡 Please enter your **Mistral API Key** in the sidebar authentication panel to unlock PDF uploading and processing.")
 
     if process_btn and uploaded_file is not None:
         with st.spinner("Reading PDF, chunking, and creating embeddings..."):
