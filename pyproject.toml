@@ -23,4 +23,6 @@ dependencies = [
     "langchain-chroma",
     "streamlit",
     "pypdf",
+    "chromadb",
+    "pysqlite3-binary",
 ]

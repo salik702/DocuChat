@@ -1,7 +1,10 @@
-# Load PDF
-# Split into chunks
-# Create Embeddings using Mistral AI
-# Store into ChromaDB
+# Standard library imports with sqlite3 override for Streamlit Cloud deployment compatibility
+import sys
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader

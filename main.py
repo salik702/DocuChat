@@ -1,3 +1,11 @@
+# Standard library imports with sqlite3 override for Streamlit Cloud deployment compatibility
+import sys
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 from dotenv import load_dotenv
 from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI
 from langchain_community.vectorstores import Chroma

@@ -3,6 +3,14 @@ RAG Chat with Mistral AI — Streamlit UI
 Upload a PDF, build a vector store, and chat with your document.
 """
 
+# Standard library imports first, with sqlite3 override for Streamlit Cloud deployment compatibility
+import sys
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import hashlib
 import os
 import shutil
