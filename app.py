@@ -30,9 +30,25 @@ load_dotenv()
 # --------------------------------------------------------------------------
 # API Key Setup
 # --------------------------------------------------------------------------
-mistral_api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
-if not mistral_api_key and "MISTRAL_API_KEY" in st.secrets:
-    mistral_api_key = st.secrets["MISTRAL_API_KEY"].strip()
+def _load_api_key() -> str:
+    """Load and sanitise the Mistral API key from .env or Streamlit secrets."""
+    key = os.environ.get("MISTRAL_API_KEY", "").strip().strip('"\'')
+    if not key:
+        try:
+            key = st.secrets.get("MISTRAL_API_KEY", "").strip().strip('"\'') 
+        except Exception:
+            pass
+    return key
+
+mistral_api_key = _load_api_key()
+
+if not mistral_api_key:
+    st.set_page_config(page_title="DocuChat AI", page_icon="📚")
+    st.error(
+        "🔑 **MISTRAL_API_KEY not found.** "
+        "Add it to your `.env` file as `MISTRAL_API_KEY=your_key_here` and restart the app."
+    )
+    st.stop()
 
 # --------------------------------------------------------------------------
 # Page config
